@@ -1,85 +1,96 @@
-#CAU 1A
-# import cac thu vien can thiet
+# Import các thư viện cần thiết
 from flask import Flask, request, jsonify
 import sqlite3
 import json
 
-#khoi tao ung dung flask
+# Khởi tạo ứng dụng Flask
 app = Flask(__name__)
 
-#bien tro toi csdl
-db = 'ShoppingDB.db'
+# Biến trỏ tới cơ sở dữ liệu
+DATABASE = 'ShoppingDB.db'
 
-#util - ket noi db va tra ve dict
-def get_db():
-    conn = sqlite3.connect(db)
-    conn.row_factory = sqlite3.Row # de truy cap cot theo ten
+# Hàm tiện ích: kết nối DB và trả về dict
+def get_db_connection():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row  # Để truy cập cột theo tên
     return conn
 
-#CAU 1B
+# =============================================
+# CÂU 1b: Hàm Index - Hiện thông tin sinh viên
+# =============================================
 @app.route('/')
 def index():
-    return "1_Nguyen_Thi_Qua_Dua_1"
+    return "1_NguyenVanA_2"  # Thay bằng thông tin của bạn
 
-#CAU 2A - GET: lay toan bo danh sach Employees
+# =============================================
+# CÂU 2a: GET - Lấy toàn bộ danh sách Employee
+# =============================================
 @app.route('/Employee', methods=['GET'])
 def get_Employee():
-    conn = get_db()
-    employees = conn.execute("SELECT * FROM Employee").fetchall()
+    conn = get_db_connection()
+    employees = conn.execute('SELECT * FROM Employee').fetchall()
     conn.close()
-    #chuyen ket qua sang dang list dict roi tra ve json
+    # Chuyển kết quả sang dạng list dict rồi trả về JSON
     return jsonify([dict(e) for e in employees])
 
-#CAU 2B - DELETE: xoa employee theo id
+# =============================================
+# CÂU 2b: DELETE - Xóa Employee theo ID
+# =============================================
 @app.route('/Employee', methods=['DELETE'])
 def delete_Employee():
     data = request.get_json()
-    employee_id = data['Employee_id']
-    conn = get_db()
-    conn.execute("DELETE FROM Employee WHERE Employee_id = ?", (employee_id,))
+    employee_id = data.get('Employee_id')
+    conn = get_db_connection()
+    conn.execute('DELETE FROM Employee WHERE Employee_id = ?', (employee_id,))
     conn.commit()
     conn.close()
-    return jsonify({"message": f"Da xoa Employee co ID = {employee_id}"})
+    return jsonify({"message": f"Đã xóa Employee có ID = {employee_id}"})
 
-#CAU 3A - POST: them Employee moi
+# =============================================
+# CÂU 3a: POST - Thêm Employee mới
+# =============================================
 @app.route('/Employee', methods=['POST'])
 def add_Employee():
     data = request.get_json()
-    conn = get_db()
+    conn = get_db_connection()
     cursor = conn.execute(
-        "INSERT INTO Employee (first_name, last_name, department, address, email) VALUES (?, ?, ?, ?, ?)",
+        'INSERT INTO Employee (first_name, last_name, department, address, email) VALUES (?, ?, ?, ?, ?)',
         (data['first_name'], data['last_name'], data['department'], data['address'], data['email'])
     )
     conn.commit()
-    new_id = cursor.lastrowid # lay id vua duoc tao
+    new_id = cursor.lastrowid  # Lấy ID vừa được tạo
     conn.close()
-    return jsonify({"message":"Them thanh cong", "Employee_id": new_id})
+    return jsonify({"message": "Thêm thành công", "Employee_id": new_id})
 
-#CAU 3B - PUT: cap nhat thong tin employee
+# =============================================
+# CÂU 3b: PUT - Cập nhật thông tin Employee
+# =============================================
 @app.route('/Employee', methods=['PUT'])
 def update_Employee():
     data = request.get_json()
-    employee_id = data['Employee_id']
-    conn = get_db()
+    employee_id = data.get('Employee_id')
+    conn = get_db_connection()
     conn.execute(
-        "UPDATE Employee SET first_name=?, last_name=?, department=?, address=?, email=? WHERE Employee_id = ?",
+        'UPDATE Employee SET first_name=?, last_name=?, department=?, address=?, email=? WHERE Employee_id=?',
         (data['first_name'], data['last_name'], data['department'], data['address'], data['email'], employee_id)
     )
     conn.commit()
     conn.close()
-    return jsonify({"message": f"Da cap nhat Employee ID = {employee_id}"})
+    return jsonify({"message": f"Đã cập nhật Employee ID = {employee_id}"})
 
-#CAU 4A: Kiem tra employee da ton tai theo Email + FirstName
+# =============================================
+# CÂU 4a: Kiểm tra Employee tồn tại theo Email + FirstName
+# =============================================
 @app.route('/Employee/check', methods=['GET'])
 def check_Employee():
-    #Nhan email va first_name tu query string: /Employee/check?email=...&first_name=...
+    # Nhận email và first_name từ query string: /Employee/check?email=...&first_name=...
     email = request.args.get('email')
     first_name = request.args.get('first_name')
 
-    conn = get_db()
-    #tim employee khop ca email va first_name
+    conn = get_db_connection()
+    # Tìm employee khớp cả email và first_name
     result = conn.execute(
-        "SELECT * FROM Employee WHERE email = ? AND first_name = ?",
+        'SELECT * FROM Employee WHERE email = ? AND first_name = ?',
         (email, first_name)
     ).fetchone()
     conn.close()
@@ -87,76 +98,82 @@ def check_Employee():
     if result:
         return jsonify({"exists": True, "employee": dict(result)})
     else:
-        return jsonify({"exists": False, "message": "Khong tim thay Employee"})
+        return jsonify({"exists": False, "message": "Không tìm thấy Employee"})
 
-#CAU 4B: Tim kiem Employee theo chuoi (LIKE trong sql)
+# =============================================
+# CÂU 4b: Tìm kiếm Employee theo chuỗi (LIKE)
+# =============================================
 @app.route('/Employee/search', methods=['GET'])
 def search_Employee():
-    #Nhan chuoi tim kiem tu query string: /Employee/search?q=...
+    # Nhận chuỗi tìm kiếm từ query string: /Employee/search?q=...
     keyword = request.args.get('q', '')
-    pattern = f'%{keyword}%' # dung LIKE de tim gan dung
+    pattern = f'%{keyword}%'  # Dùng LIKE để tìm gần đúng
 
-    conn = get_db()
-    #tim trong tat ca cac cot text
+    conn = get_db_connection()
+    # Tìm trong tất cả các cột text
     results = conn.execute(
-        "SELECT * FROM Employee WHERE first_name LIKE ? OR last_name LIKE ? OR department LIKE ? OR address LIKE ? OR email LIKE ?",
+        '''SELECT * FROM Employee
+           WHERE first_name LIKE ? OR last_name LIKE ?
+              OR department LIKE ? OR address LIKE ? OR email LIKE ?''',
         (pattern, pattern, pattern, pattern, pattern)
     ).fetchall()
     conn.close()
 
     return jsonify([dict(r) for r in results])
 
-#CAU 4C: lay danh sach don hang theo EmployeeID
-#gia su co bang order lien ket voi employee
+# =============================================
+# CÂU 4c: Lấy danh sách đơn hàng theo EmployeeID
+# (Giả sử có bảng Orders liên kết với Employee)
+# =============================================
 @app.route('/Employee/orders', methods=['GET'])
 def get_orders_by_employee():
-    #nhan employeeid tu query string
+    # Nhận EmployeeID từ query string
     employee_id = request.args.get('Employee_id')
 
-    conn = get_db()
-    #kiem tra employee ton tai
+    conn = get_db_connection()
+    # Kiểm tra Employee tồn tại
     emp = conn.execute(
-        "SELECT * FROM Employee WHERE Employee_id = ?", (employee_id,)
+        'SELECT * FROM Employee WHERE Employee_id = ?', (employee_id,)
     ).fetchone()
 
     if not emp:
         conn.close()
-        return jsonify({"message":"Khong tim thay employee"}), 404
+        return jsonify({"message": "Không tìm thấy Employee"}), 404
 
-    #lay danh sach don hang (neu co bang orders)
+    # Lấy danh sách đơn hàng (nếu có bảng Orders)
     try:
         orders = conn.execute(
-            "SELECT * FROM Orders WHERE Employee_id = ?", (employee_id,)
+            'SELECT * FROM Orders WHERE Employee_id = ?', (employee_id,)
         ).fetchall()
         conn.close()
         return jsonify({"employee": dict(emp), "orders": [dict(o) for o in orders]})
     except:
         conn.close()
-        return jsonify({"message": "Chua co bang order trong db", "employee": dict(emp)})
+        return jsonify({"message": "Chưa có bảng Orders trong DB", "employee": dict(emp)})
 
-#CAU 4D: nhap hang loat danh sach khach hang
+# =============================================
+# CÂU 4d: Nhập hàng loạt danh sách khách hàng
+# =============================================
 @app.route('/Employee/bulk', methods=['POST'])
 def bulk_add_customers():
-    #Nhan vao 1 list cac object khach hang
-    data_list = request.get_json() # la 1 mang json
+    # Nhận vào một list các object khách hàng
+    data_list = request.get_json()  # Là một mảng JSON
 
-    conn = get_db()
+    conn = get_db_connection()
     inserted_ids = []
 
-    #lan luot insert tung ban ghi
+    # Lần lượt insert từng bản ghi
     for data in data_list:
         cursor = conn.execute(
-            "INSERT INTO Employee (first_name, last_name, department, address, email) VALUES (?,?,?,?)",
+            'INSERT INTO Employee (first_name, last_name, department, address, email) VALUES (?, ?, ?, ?, ?)',
             (data['first_name'], data['last_name'], data['department'], data['address'], data['email'])
         )
         inserted_ids.append(cursor.lastrowid)
 
     conn.commit()
     conn.close()
-    return jsonify({"message":f"Da them {len(inserted_ids)} ban ghi", "ids": inserted_ids})
+    return jsonify({"message": f"Đã thêm {len(inserted_ids)} bản ghi", "ids": inserted_ids})
 
-#chay ung dung o cong 5000
+# Chạy ứng dụng ở cổng 5000
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
-
-
