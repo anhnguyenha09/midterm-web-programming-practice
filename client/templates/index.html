@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Danh Sách Employee</title>
+    <title>Trang chủ</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,7 +10,7 @@
             background-color: #f0f2f5;
         }
         h1 {
-            color: #2c3e50;
+            color: #16293b;
             text-align: center;
         }
         table {
@@ -22,7 +22,7 @@
             overflow: hidden;
         }
         th {
-            background-color: #2c3e50;
+            background-color: #07213a;
             color: white;
             padding: 12px 15px;
             text-align: left;
@@ -34,30 +34,70 @@
         tr:hover {
             background-color: #f5f5f5;
         }
+        .button-group {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-add {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-add:hover {
+            background-color: #218838;
+        }
+        .btn-edit {
+            background-color: #007bff;
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .btn-edit:hover {
+            background-color: #0056b3;
+        }
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 <body>
-    <h1>Danh Sách Nhân Viên (Employee)</h1>
+    <h1>Danh Sách Users</h1>
     <table>
         <thead>
             <tr>
                 <th>ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Department</th>
-                <th>Address</th>
+                <th>Username</th>
                 <th>Email</th>
+                <th>Mã lớp</th>
+                <th>Hành động</th>
             </tr>
         </thead>
         <tbody>
-            {% for emp in employees %}
+            {$ for user in users}
             <tr>
-                <td>{{ emp.Employee_id }}</td>
-                <td>{{ emp.first_name }}</td>
-                <td>{{ emp.last_name }}</td>
-                <td>{{ emp.department }}</td>
-                <td>{{ emp.address }}</td>
-                <td>{{ emp.email }}</td>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.class_id }}</td>
+                <td>
+                    <a href="/edit/{{ user.id }}" class="btn btn-edit">Sửa</a>
+                    <a href="/delete/{{ user.id }}" class="btn btn-delete">Xóa</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

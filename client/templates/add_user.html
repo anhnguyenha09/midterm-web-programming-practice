@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm user mới</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        h1 {
+            color: #16293b;
+            text-align: center;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1)
+        }
+        .btn-submit {
+            background-color: #28a745;
+            color: whitesmoke
+        }
+        .btn-submit:hover {
+            background-color: #0d604d;
+        }
+    </style>
+</head>
+<body>
+    <h1>Thêm user mới</h1>
+    <form action="" method="POST">
+        <label for="username">Username: </label> 
+        <!-- for username có nghĩa là liên kết với input có id = username; còn name = username là khi submit thì backend sẽ nhận dữ liệu theo key này {"username": "HA"} -->
+        <input type="text" id="username" name="username" required>
+
+        <label for="email">Email: </label>
+        <input type="text" name="email" id="email" required>
+
+        <label for="class_id">Mã lớp</label>
+        <input type="text" id="class_id" name="class_id">
+
+        <div class="button-group">
+            <button type="submit" class="btn btn-submit">Tạo user</button>
+            <a href="/" class="btn btn-cancel">Hủy</a>
+            <!-- / là đường dẫn gốc (root) của website, khi click vào sẽ về trang chủ -->
+        </div>
+    </form>
+</body>
+</html>
