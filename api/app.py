@@ -34,7 +34,7 @@ def init_db(): # dinh nghia ham khoi tao csdl
                     name TEXT NOT NULL)
                 ''')
     conn.commit() # commit la lenh de luu cac thay doi da thuc hien vao csdl, neu khong commit thi cac thay doi se khong duoc luu va se mat khi dong ket noi
-    conn.close() # dong ket noi sau khi da thuc hien xong cac thao tac tren csdl
+
 
     with open('users.json', 'r', encoding='utf-8') as f: # mo file users.json de doc du lieu, 'r' la che do doc, encoding='utf-8' de dam bao doc du lieu dung dinh dang utf-8
         users = json.load(f) # json.load de doc du lieu tu file json va chuyen doi no thanh doi tuong python (trong truong hop nay la mot danh sach cac dict, moi dict dai dien cho mot user voi cac key la username va email)

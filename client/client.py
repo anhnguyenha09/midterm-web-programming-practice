@@ -34,7 +34,7 @@ def call_api(endpoint, method='GET', data=None):
             req = urllib.request.Request(
                 url, 
                 data = req_data,
-                headers={'Content-Type': 'application/json'}
+                headers={'Content-Type': 'application/json'},
                 method=method
             ) #tao request de goi API, truyen url, du lieu da duoc encode va phuong thuc (POST hoac PUT)
             with urllib.request.urlopen(req) as response:
