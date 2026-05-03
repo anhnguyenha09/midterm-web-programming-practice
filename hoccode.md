@@ -167,3 +167,114 @@ cái username tui để trong db là bắt buộc đó (not null)
 nếu như tui để trống username khi post thì chuyện gì sẽ xảy ra?
 
 nếu như tui để trống username khi post nhưng viết là  u [username] thì chuyện gì sẽ xảy ra?
+
+
+Câu này rất hay vì nó đụng đúng ranh giới giữa Python layer và database layer. Mình tách rõ từng case để bạn không bị “lú” nữa.
+
+1. Trường hợp dùng u.get('username')
+u.get('username')
+Case A: client KHÔNG gửi field username
+{
+  "email": "a@gmail.com",
+  "class_id": 1
+}
+
+→ u.get('username') = None
+
+→ SQL chạy:
+
+username = NULL
+
+→ nhưng DB của bạn có NOT NULL
+
+=> Kết quả:
+
+Lỗi ngay tại database
+sqlite3.IntegrityError: NOT NULL constraint failed
+
+Case B: client gửi nhưng để rỗng
+{
+  "username": "",
+  "email": "a@gmail.com",
+  "class_id": 1
+}
+
+→ u.get('username') = "" (chuỗi rỗng, KHÔNG phải NULL)
+
+→ SQL:
+
+username = ""
+
+=> SQLite cho qua vì:
+
+"" ≠ NULL
+
+=> Không lỗi, nhưng:
+
+Data bẩn (username rỗng)
+
+2. Trường hợp dùng u['username']
+u['username']
+Case A: KHÔNG có key username
+{
+  "email": "a@gmail.com"
+}
+
+=> Python nổ ngay:
+
+KeyError: 'username'
+
+→ code dừng luôn, chưa kịp xuống DB
+
+Case B: có key nhưng rỗng
+{
+  "username": "",
+  "email": "a@gmail.com"
+}
+
+→ u['username'] = ""
+
+→ SQL vẫn insert bình thường
+
+=> giống hệt .get()
+
+3. So sánh nhanh cho bạn
+Tình huống	u.get()	u['']
+Thiếu key	None → lỗi DB (NOT NULL)	KeyError (lỗi Python)
+Có key = ""	insert bình thường	insert bình thường
+4. Insight cực quan trọng (nên nhớ)
+
+Database chỉ chặn NULL, không chặn ""
+
+=> nếu bạn không validate:
+
+API của bạn vẫn có thể chứa dữ liệu rác
+
+5. Cách viết chuẩn (backend xịn sẽ làm)
+
+Không phụ thuộc vào get hay [], mà:
+
+username = u.get('username')
+
+if not username:
+    return jsonify({'error': 'username is required'}), 400
+
+if not username sẽ bắt luôn:
+
+None
+""
+" " (nếu strip thêm)
+6. Nếu muốn chặt chẽ hơn
+username = u.get('username')
+
+if not username or not username.strip():
+    return jsonify({'error': 'username cannot be empty'}), 400
+7. Chốt lại cho bạn (rất gọn)
+get() → an toàn, không crash
+[] → strict, thiếu là chết ngay
+DB NOT NULL → chỉ chặn None, không chặn ""
+validate ở backend là bắt buộc
+Một câu nhớ lâu
+
+get() cứu bạn khỏi crash
+nhưng chỉ validation mới cứu data của bạn
