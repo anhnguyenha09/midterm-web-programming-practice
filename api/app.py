@@ -1,5 +1,5 @@
-from flask import Flask, request, jsonify, render_template
-# import cac thu vien gom flask (backend), jsonify (de tra ve json), request (de nhan cac method), render_template(de render html)
+from flask import Flask, request, jsonify, render_template, flash
+# import cac thu vien gom flask (backend), jsonify (de tra ve json), request (de nhan cac method), render_template(de render html), flash (de hien thi thong bao loi tren giao dien)
 import sqlite3 # thu vien tuong tac voi csdl sqlite
 import json # thu vien xu li json
 
@@ -83,10 +83,11 @@ def add_user():
     data = request.get_json() # request.get_json() de lay du lieu duoc gui len tu client va chuyen doi no thanh mot dict python, data se tro thanh bien chua dict duoc truyen vao tu client
     username = data.get('username') # lay gia tri cua key 'username' trong dict data, luu vao bien username
     email = data.get('email') # lay gia tri cua key 'email' trong dict data, luu vao bien email
+    class_id = data.get('class_id') # lay gia tri cua key 'class_id' trong dict data, luu vao bien class_id
 
     conn = get_db_connection() #ket noi toi csdl
     cur = conn.cursor() #tao doi tuong cursor de thuc thi lenh sql
-    cur.execute('INSERT INTO users (username, email) VALUES (?,?)', (username, email))
+    cur.execute('INSERT INTO users (username, email, class_id) VALUES (?, ?, ?)', (username, email, class_id))
     # thuc thi lenh sql de chen du lieu vao bang users cho cot username va email, su dung dau hoi ? de thay the bang gia tri thuc te se truyen vao sau do, (username, email) la mot tuple chua gia tri se duoc truyen vao de thay the cac dau hoi ?
     conn.commit() #commit de luu thay doi vao csdl
     
@@ -103,10 +104,10 @@ def update_user(user_id):
     cur = conn.cursor() # tao doi tuong cursor de thuc thi lenh sql
     cur.execute('''
                 UPDATE users 
-                SET username = ?, email = ? 
+                SET username = ?, email = ?, class_id = ? 
                 WHERE id = ?
                 ''', # lenh sql de cap nhat du lieu trong bang users, set username = ?, email = ? de cap nhat gia tri cua cot username va email, where id = ? de xac dinh user can cap nhat theo id, su dung dau hoi ? de thay the bang gia tri thuc te se truyen vao sau do
-                (data['username'], data['email'], user_id) # truyen thang dict data vao lenh sql, data['username'] truy cap gia tri cua key 'username' trong dict data, tuong tu cho email, user_id la id cua user can cap nhat, da khai bao trong ham
+                (data.get('username'), data.get('email'), data.get('class_id'), user_id) # hoac co the truyen thang dict data vao lenh sql, data['username'] truy cap gia tri cua key 'username' trong dict data, tuong tu cho email, user_id la id cua user can cap nhat, da khai bao trong ham
     )
 
     conn.commit() # commit de luu thay doi vao csdl
@@ -153,18 +154,18 @@ def get_users_by_class(class_id):
     conn = get_db_connection()
     cur = conn.cursor()
     
-    user_class = cur.execute('SELECT * FROM classes WHERE id = ?', (class_id,)).fetchone() 
-    # lay thong tin lop hoc theo class_id, neu khong tim thay thi user_class se la None
-    if not user_class:
-        conn.close()
-        return jsonify({'message': f'Khong tim thay lop hoc co id = {class_id}'})
+    # user_class = cur.execute('SELECT * FROM classes WHERE id = ?', (class_id,)).fetchone() 
+    # # lay thong tin lop hoc theo class_id, neu khong tim thay thi user_class se la None
+    # if not user_class:
+    #     conn.close()
+    #     return jsonify({'message': f'Khong tim thay lop hoc co id = {class_id}'})
     
-    else:
-        users = cur.execute('SELECT * FROM users WHERE class_id = ?', (class_id,)).fetchall()
-        # lay danh sach user trong bang co cot classId bang class_id, su dung dau hoi ? de thay the bang gia tri thuc te se truyen vao sau do, (class_id,) la mot
-        conn.close()
+    # else:
+    users = cur.execute('SELECT * FROM users WHERE class_id = ?', (class_id,)).fetchall()
+        # lay danh sach user trong bang co cot class_id bang class_id, su dung dau hoi ? de thay the bang gia tri thuc te se truyen vao sau do, (class_id,) la mot tuple chua gia tri se duoc truyen vao de thay the cac dau hoi ?, o day la mot tuple voi mot phan tu duy nhat la class_id
+    conn.close()
 
-        return jsonify({'users': [dict(user) for user in users], 'class': dict(user_class)})
+    return jsonify({'users': [dict(user) for user in users]})
         # tra ve mot dict duoc chuyen doi sang json, dict nay chua key 'users' voi gia tri la mot danh sach cac dict dai dien cho user trong lop hoc do, va key 'class' voi gia tri la mot dict dai dien cho lop hoc do, dict(user_class) chuyen doi doi tuong user_class thanh mot dict de co the truyen vao json
 
 # them 1 loat user 
@@ -178,26 +179,32 @@ def add_users_batch():
     inserted_users = [] # tao mot danh sach rong de luu tru thong tin cac user moi duoc them vao
 
     for u in data:
-        cur.execute('INSERT INTO users (username, email, class_id) VALUES (?, ?, ?)', (u['username'], u['email'], u['class_id']))
+        cur.execute('INSERT INTO users (username, email, class_id) VALUES (?, ?, ?)', (u.get('username'), u.get('email'), u.get('class_id')))
         # thuc thi lenh sql de chen du lieu vao bang users cho cot username, email va class_id, su dung dau hoi ? de thay the bang gia tri thuc te se truyen vao sau do, (u['username'], u['email'], u['class_id']) la mot tuple chua gia tri se duoc truyen vao de thay the cac dau hoi ?, u['username'] truy cap gia tri cua key 'username' trong dict u, tuong tu cho email va class_id
-        inserted_users.append({'id': cur.lastrowid, 'username': u['username'], 'email': u['email'], 'class_id': u['class_id']})
-
+        inserted_users.append({'id': cur.lastrowid, 'username': u.get('username'), 'email': u.get('email'), 'class_id': u.get('class_id')})
+        # sau khi chen du lieu vao csdl, ta them mot dict dai dien cho user moi duoc them vao danh sach inserted_users, dict nay chua key 'id' voi gia tri la id cua user moi duoc them vao (cur.lastrowid), va cac key 'username', 'email', 'class_id' voi gia tri tuong ung duoc lay tu dict u
+        conn.commit() # commit de luu thay doi vao csdl sau moi lan chen du lieu, de dam bao rang se ko bi lock database ==> neu nhu 1 user chua dc insert xong ma da co user khac cung luc cung insert, neu ko commit sau moi lan chen thi se bi lock database va khong the chen du lieu cho cac user khac cho den khi lenh sql truoc do duoc commit va giai phong lock
     conn.commit()
     conn.close()
 
     return jsonify({'message': f'Da them {len(inserted_users)} user moi', 'users': inserted_users})
     # tra ve mot dict duoc chuyen doi sang json, dict nay chua key 'message' voi gia tri la mot chuoi thong bao da them bao nhieu user moi, va key 'users' voi gia tri la mot danh sach cac dict dai dien cho user moi duoc them vao, moi dict chua id, username va email cua user do
 
-#route hien thi giao dien html
-@app.route('/view')
-def view():
+#route hien thi giao dien html // cai nay t luyen them thoi
+@app.route('/view/<int:user_id>', methods=['GET'])
+def view(user_id): # dinh nghia route cho duong dan '/view/<int:user_id>', chi chap nhan phuong thuc GET, khi nguoi dung truy cap vao duong dan nay voi mot user_id thi ham view se duoc thuc thi, user_id se duoc chuyen doi sang kieu int va truyen vao ham de su dung trong lenh sql
     conn = get_db_connection()
     cur = conn.cursor()
 
-    users = cur.execute('SELECT * FROM users').fetchall() # lay tat ca du lieu tu bang users, fetchall() tra ve mot danh sach cac hang, moi hang duoc dai dien boi mot doi tuong sqlite3.Row (do ta da cau hinh row_factory truoc do), ban co the truy cap du lieu trong moi hang bang ten cot (vd: row['username'])
-    conn.close()
+    users = cur.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchall() # lay tat ca du lieu tu bang users tmdk, fetchall() tra ve mot danh sach cac hang, moi hang duoc dai dien boi mot doi tuong sqlite3.Row (do ta da cau hinh row_factory truoc do), ban co the truy cap du lieu trong moi hang bang ten cot (vd: row['username'])
+    conn.close() # thuc ra fetchone cung duoc neu chi muon lay mot user, nhung de cho de code va de sau nay co the thay doi de lay nhieu user cung luc thi ta dung fetchall() de luu vao bien users la mot danh sach cac user (duoi dang sqlite3.Row), neu chi co mot user thi danh sach se chi chua mot phan tu, neu khong co user nao trung thi danh sach se rong
+
+    return jsonify([dict(row) for row in users]) # tra ve mot danh sach cac dict duoc chuyen doi sang json, moi dict dai dien cho mot user trong bang users, dict(row) chuyen doi doi tuong row thanh mot dict de co the truyen vao json
     
-    return render_template('index.html', users=users) 
+    
+    
+    #return render_template('index.html', users=users) 
+    
     # render_template de render file html, o day la index.html, va truyen bien users vao file html de su dung trong do, users se tro thanh mot danh sach cac doi tuong sqlite3.Row dai dien cho user, ban co the truy cap du lieu trong moi row bang ten cot (vd: row['username']) trong file html
     #users ben phai la bien duoc dinh nghia trong file app.py, users ben trai la bien trong html
     # cu the, trong html se ghi nhu the nay:
